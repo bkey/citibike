@@ -88,6 +88,14 @@
 			
 			
 		getdata();
+		
+		var heatMaps = {
+   			"Available Bikes": availBikesLayer,
+    		"Available Docks": availDocksLayer,
+    		"Total Docks": totalDocksLayer
+		};
+		
+		L.control.layers(heatMaps).addTo(map);
 	}
 			
 	function getdata()
@@ -130,41 +138,10 @@
 		});
 	}
 		
-	function toggleLayer(which)
-	{
-		//console.log(citibike);
-    	if (which == 1 )
-    	{
-    		map.removeLayer(availDocksLayer);
-    		map.removeLayer(totalDocksLayer);
-			map.addLayer(availBikesLayer);
-			document.getElementById("currentDisplay").innerHTML="Available Bikes";
-		}
-		else if (which==2) 
-		{
-			map.removeLayer(availBikesLayer);
-			map.removeLayer(totalDocksLayer);
-			map.addLayer(availDocksLayer);
-			document.getElementById("currentDisplay").innerHTML="Available Docks";
-		}
-		else
-		{
-			map.removeLayer(availBikesLayer);
-			map.removeLayer(availDocksLayer);
-			map.addLayer(totalDocksLayer);
-			document.getElementById("currentDisplay").innerHTML="Total Docks";
-		}
-	}
 		
 	</script>
 	
 	<body onload="init()">
-		<div id="nav">
-			Currently Showing: <div id="currentDisplay">None</div>
-			<button id="1" onClick="toggleLayer(this.id)">Available Bikes</button>
-			<button id="2" onClick="toggleLayer(this.id)">Available Docks</button>
-			<button id="3" onClick="toggleLayer(this.id)">Total Docks</button>
-		</div>
 		<div id="map"></div>
 	</body>
 	
