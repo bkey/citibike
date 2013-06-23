@@ -1,0 +1,179 @@
+<!DOCTYPE html lang="en-US">
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=10.0">
+		<title>CitiBike Activity</title>
+
+		<script src="http://code.jquery.com/jquery-1.8.0.min.js"></script>
+
+		<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.css" />
+		<!--[if lte IE 8]>
+			<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.ie.css" />
+		<![endif]-->
+		<style type="text/css" media="screen">
+			body{
+				margin: 0;
+				padding: 0;
+			}
+
+			#map {
+				width: 100%;
+				height: 100%;
+			}
+		</style>
+		<script src="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet-src.js"></script>
+		<script type="text/javascript" src="heatmap.js"></script>
+		<script type="text/javascript" src="heatmap-leaflet.js"></script>
+		<script type="text/javascript" src="QuadTree.js"></script>
+
+		<script type="text/javascript" charset="utf-8">
+			$(function() {
+				
+			});
+		</script>
+	</head>
+	
+	<script type="text/javascript" charset="utf-8">
+	
+	var baseLayer;
+	var map;
+	var availBikesLayer;
+	var availDocksLayer;
+	var totalDocksLayer;
+	
+	function init()
+	{
+		baseLayer = L.tileLayer(
+			'http://{s}.tile.cloudmade.com/ad132e106cd246ec961bbdfbe0228fe8/997/256/{z}/{x}/{y}.png',{
+				attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
+				maxZoom: 20
+			}
+		);
+		
+		//init heatmaps
+		availBikesLayer = L.TileLayer.heatMap({
+			radius: { value: 20, absolute: false },
+			opacity: 0.8,
+			gradient: {
+				0.45: "rgb(0,0,255)",
+				0.55: "rgb(0,255,255)",
+				0.65: "rgb(0,255,0)",
+				0.95: "yellow",
+				1.0: "rgb(255,0,0)"
+			}
+		});
+		availDocksLayer = L.TileLayer.heatMap({
+			radius: { value: 20, absolute: false },
+			opacity: 0.8,
+			gradient: {
+				0.45: "rgb(0,0,255)",
+				0.55: "rgb(0,255,255)",
+				0.65: "rgb(0,255,0)",
+				0.95: "yellow",
+				1.0: "rgb(255,0,0)"
+			}
+		});
+		totalDocksLayer = L.TileLayer.heatMap({
+			radius: { value: 20, absolute: false },
+			opacity: 0.8,
+			gradient: {
+				0.45: "rgb(0,0,255)",
+				0.55: "rgb(0,255,255)",
+				0.65: "rgb(0,255,0)",
+				0.95: "yellow",
+				1.0: "rgb(255,0,0)"
+			}
+		});
+			
+		map = new L.Map('map', {
+			center: new L.LatLng(40.7361, -73.9901),
+			zoom: 13,
+			layers: [baseLayer]
+		});
+			
+			
+		getdata();
+	}
+			
+	function getdata()
+	{
+				
+		var availBikes = [];
+		var availDocks = [];
+		var totalDocks = [];
+				
+		$.ajax({
+  			type: 'GET',
+  			url: 'get_citibike.php',
+  			contentType: 'application/json; charset=utf-8',
+  			dataType: 'json',
+  			complete: function (jsonData)  {
+    			var obj = JSON.parse(jsonData.responseText);
+    				
+    			var beanList = obj.stationBeanList;
+    			for (var i in beanList) {
+    				var s_lat = beanList[i].latitude;
+    				var s_lon = beanList[i].longitude;
+    				availBikes.push({lat: s_lat, lon: s_lon, value: beanList[i].availableBikes});
+    				availDocks.push({lat: s_lat, lon: s_lon, value: beanList[i].availableDocks});
+    				totalDocks.push({lat: s_lat, lon: s_lon, value: beanList[i].totalDocks});
+    				
+    				L.circle([s_lat, s_lon], 3,{
+    					color: 'black'}).addTo(map).bindPopup('<strong>' + beanList[i].stationName + '</strong><BR />' +
+    														  'Available Bikes: ' + beanList[i].availableBikes + '<BR />' +
+    														  'Available Docks: ' + beanList[i].availableDocks + '<BR />' +
+    														  'Total Docks: ' + beanList[i].totalDocks);
+    				}
+    				
+    			availBikesLayer.setData(availBikes);
+    			availDocksLayer.setData(availDocks);
+    			totalDocksLayer.setData(totalDocks);
+  			},
+  			error: function() {
+    			alert('Error Loading CitiBike JSON File');
+  			}
+		});
+	}
+		
+	function toggleLayer(which)
+	{
+		//console.log(citibike);
+    	if (which == 1 )
+    	{
+    		map.removeLayer(availDocksLayer);
+    		map.removeLayer(totalDocksLayer);
+			map.addLayer(availBikesLayer);
+			document.getElementById("currentDisplay").innerHTML="Available Bikes";
+		}
+		else if (which==2) 
+		{
+			map.removeLayer(availBikesLayer);
+			map.removeLayer(totalDocksLayer);
+			map.addLayer(availDocksLayer);
+			document.getElementById("currentDisplay").innerHTML="Available Docks";
+		}
+		else
+		{
+			map.removeLayer(availBikesLayer);
+			map.removeLayer(availDocksLayer);
+			map.addLayer(totalDocksLayer);
+			document.getElementById("currentDisplay").innerHTML="Total Docks";
+		}
+	}
+		
+	</script>
+	
+	<body onload="init()">
+		<div id="nav">
+			Currently Showing: <div id="currentDisplay">None</div>
+			<button id="1" onClick="toggleLayer(this.id)">Available Bikes</button>
+			<button id="2" onClick="toggleLayer(this.id)">Available Docks</button>
+			<button id="3" onClick="toggleLayer(this.id)">Total Docks</button>
+		</div>
+		<div id="map"></div>
+	</body>
+	
+	
+
+</html>
